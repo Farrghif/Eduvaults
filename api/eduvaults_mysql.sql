@@ -1,0 +1,266 @@
+DROP DATABASE IF EXISTS `eduvaults`;
+CREATE DATABASE `eduvaults`;
+USE `eduvaults`;
+
+CREATE TABLE `Gender` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `Name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Major` (
+  `Id` INT NOT NULL,
+  `Name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Religion` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `Name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Role` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `Name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `School` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SchoolName` VARCHAR(100) NOT NULL,
+  `SchoolCode` VARCHAR(10) NOT NULL,
+  `Address` VARCHAR(200) NOT NULL,
+  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UQ_SchoolCode` (`SchoolCode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `User` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `Username` VARCHAR(100) NOT NULL,
+  `Fullname` VARCHAR(100) NOT NULL,
+  `Email` VARCHAR(100) NOT NULL,
+  `RoleId` INT NOT NULL,
+  `GenderId` INT NOT NULL,
+  `ReligionId` INT NOT NULL,
+  `BloodType` VARCHAR(10) NOT NULL,
+  `NIS` INT DEFAULT NULL,
+  `NISN` INT DEFAULT NULL,
+  `BirthDate` DATE NOT NULL,
+  `Address` VARCHAR(200) NOT NULL,
+  `PhoneNumber` VARCHAR(200) NOT NULL,
+  `Password` VARCHAR(200) NOT NULL,
+  `MajorId` INT DEFAULT NULL,
+  `IsActive` TINYINT(1) NOT NULL DEFAULT 0,
+  `ProfileImage` LONGBLOB DEFAULT NULL,
+  `OtpCode` VARCHAR(10) DEFAULT NULL,
+  `OtpExpiresAt` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_User_Gender` FOREIGN KEY (`GenderId`) REFERENCES `Gender` (`Id`),
+  CONSTRAINT `FK_User_Majorr` FOREIGN KEY (`MajorId`) REFERENCES `Major` (`Id`),
+  CONSTRAINT `FK_User_Religion` FOREIGN KEY (`ReligionId`) REFERENCES `Religion` (`Id`),
+  CONSTRAINT `FK_User_Role` FOREIGN KEY (`RoleId`) REFERENCES `Role` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Classes` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `ClassName` VARCHAR(100) NOT NULL,
+  `Description` VARCHAR(500) NOT NULL,
+  `TeacherId` INT NOT NULL,
+  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `SchoolId` INT NOT NULL,
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UQ_Classes_SchoolId_ClassName` (`SchoolId`, `ClassName`),
+  CONSTRAINT `FK_Classes_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_Classes_User` FOREIGN KEY (`TeacherId`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Announcement` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `UserId` INT NOT NULL,
+  `PostContent` VARCHAR(1067) NOT NULL,
+  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ClassId` INT DEFAULT NULL,
+  `SchoolId` INT DEFAULT NULL,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_Announcement_Classes` FOREIGN KEY (`ClassId`) REFERENCES `Classes` (`Id`),
+  CONSTRAINT `FK_Announcement_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_Announcement_User` FOREIGN KEY (`UserId`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Assignments` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `ClassId` INT NOT NULL,
+  `Title` VARCHAR(100) NOT NULL,
+  `Description` VARCHAR(100) NOT NULL,
+  `FilePath` VARCHAR(750) DEFAULT NULL,
+  `DueDate` DATETIME NOT NULL,
+  `CreatedById` INT NOT NULL,
+  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `SchoolId` INT NOT NULL,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_Assignments_Classes` FOREIGN KEY (`ClassId`) REFERENCES `Classes` (`Id`),
+  CONSTRAINT `FK_Assignments_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_Assignments_User` FOREIGN KEY (`CreatedById`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `ClassMember` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `ClassId` INT NOT NULL,
+  `UserId` INT NOT NULL,
+  `MemberRoleId` INT NOT NULL,
+  `SchoolId` INT NOT NULL,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_ClassMember_Classes` FOREIGN KEY (`ClassId`) REFERENCES `Classes` (`Id`),
+  CONSTRAINT `FK_ClassMember_Role` FOREIGN KEY (`MemberRoleId`) REFERENCES `Role` (`Id`),
+  CONSTRAINT `FK_ClassMember_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_ClassMember_User` FOREIGN KEY (`UserId`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `EkskulSchedule` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SchoolId` INT NOT NULL,
+  `EkskulName` VARCHAR(100) NOT NULL,
+  `Description` VARCHAR(255) DEFAULT NULL,
+  `CoachUserId` INT DEFAULT NULL,
+  `DayOfWeek` VARCHAR(20) NOT NULL,
+  `StartTime` TIME NOT NULL,
+  `EndTime` TIME NOT NULL,
+  `Room` VARCHAR(100) DEFAULT NULL,
+  `IsActive` TINYINT(1) DEFAULT 1,
+  `CreatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK__EkskulSch__Coach__1F2E9E6D` FOREIGN KEY (`CoachUserId`) REFERENCES `User` (`Id`),
+  CONSTRAINT `FK__EkskulSch__Schoo__1E3A7A34` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `EventSchedule` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SchoolId` INT NOT NULL,
+  `Title` VARCHAR(150) NOT NULL,
+  `Description` VARCHAR(500) DEFAULT NULL,
+  `EventDate` DATE NOT NULL,
+  `StartTime` TIME DEFAULT NULL,
+  `EndTime` TIME DEFAULT NULL,
+  `Room` VARCHAR(100) DEFAULT NULL,
+  `DressCode` VARCHAR(150) DEFAULT NULL,
+  `CreatedByUserId` INT NOT NULL,
+  `CreatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_EventSchedule_User` FOREIGN KEY (`CreatedByUserId`) REFERENCES `User` (`Id`),
+  CONSTRAINT `FK_EventSchedule_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `ExamGrid` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SchoolId` INT NOT NULL,
+  `ClassId` INT NOT NULL,
+  `CreatedByUserId` INT NOT NULL,
+  `Title` VARCHAR(150) NOT NULL,
+  `Subject` VARCHAR(100) NOT NULL,
+  `ExamDate` DATE NOT NULL,
+  `StartTime` TIME NOT NULL,
+  `EndTime` TIME NOT NULL,
+  `Room` VARCHAR(100) DEFAULT NULL,
+  `RequiredApps` VARCHAR(255) DEFAULT NULL,
+  `Rules` VARCHAR(1000) DEFAULT NULL,
+  `ExamType` VARCHAR(50) DEFAULT NULL,
+  `CreatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_ExamGrid_Classes` FOREIGN KEY (`ClassId`) REFERENCES `Classes` (`Id`),
+  CONSTRAINT `FK_ExamGrid_User` FOREIGN KEY (`CreatedByUserId`) REFERENCES `User` (`Id`),
+  CONSTRAINT `FK_ExamGrid_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Materials` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `ClassId` INT NOT NULL,
+  `Title` VARCHAR(300) NOT NULL,
+  `FilePath` VARCHAR(750) NOT NULL,
+  `UploadedById` INT NOT NULL,
+  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `SchoolId` INT NOT NULL,
+  `materialsCoverImage` LONGBLOB DEFAULT NULL,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_Materials_Classes` FOREIGN KEY (`ClassId`) REFERENCES `Classes` (`Id`),
+  CONSTRAINT `FK_Materials_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_Materials_User` FOREIGN KEY (`UploadedById`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `News` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SchoolId` INT NOT NULL,
+  `UserId` INT NOT NULL,
+  `Title` VARCHAR(200) NOT NULL,
+  `Content` LONGTEXT NOT NULL,
+  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_News_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_News_User` FOREIGN KEY (`UserId`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `NewsMedia` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `NewsId` INT NOT NULL,
+  `MediaType` VARCHAR(50) NOT NULL,
+  `FileName` VARCHAR(200) NOT NULL,
+  `FilePath` VARCHAR(500) NOT NULL,
+  `CreatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ImageNews` LONGBLOB DEFAULT NULL,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_NewsMedia_News` FOREIGN KEY (`NewsId`) REFERENCES `News` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Schedule` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SchoolId` INT NOT NULL,
+  `ClassId` INT NOT NULL,
+  `UserId` INT NOT NULL,
+  `Title` VARCHAR(100) NOT NULL,
+  `ScheduleType` VARCHAR(50) NOT NULL,
+  `DayOfWeek` VARCHAR(20) NOT NULL,
+  `StartTime` TIME NOT NULL,
+  `EndTime` TIME NOT NULL,
+  `Room` VARCHAR(100) DEFAULT NULL,
+  `CreatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_Schedule_Classes` FOREIGN KEY (`ClassId`) REFERENCES `Classes` (`Id`),
+  CONSTRAINT `FK_Schedule_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_Schedule_User` FOREIGN KEY (`UserId`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `SchoolMember` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `SchoolId` INT NOT NULL,
+  `UserId` INT NOT NULL,
+  `MemberRoleId` INT NOT NULL,
+  `NIS` INT DEFAULT NULL,
+  `NISN` INT DEFAULT NULL,
+  `MajorId` INT DEFAULT NULL,
+  `ClassId` INT DEFAULT NULL,
+  `IsVerified` TINYINT(1) NOT NULL DEFAULT 0,
+  `JoinedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_SchoolMember_Classes` FOREIGN KEY (`ClassId`) REFERENCES `Classes` (`Id`),
+  CONSTRAINT `FK_SchoolMember_Major` FOREIGN KEY (`MajorId`) REFERENCES `Major` (`Id`),
+  CONSTRAINT `FK_SchoolMember_Role` FOREIGN KEY (`MemberRoleId`) REFERENCES `Role` (`Id`),
+  CONSTRAINT `FK_SchoolMember_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_SchoolMember_User` FOREIGN KEY (`UserId`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Submissions` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `AssignmentId` INT NOT NULL,
+  `StudentId` INT NOT NULL,
+  `AnswerText` VARCHAR(350) NOT NULL,
+  `FilePath` VARCHAR(750) NOT NULL,
+  `SubmittedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `Grade` INT DEFAULT NULL,
+  `Feedback` VARCHAR(500) NOT NULL,
+  `SchoolId` INT NOT NULL,
+  PRIMARY KEY (`Id`),
+  CONSTRAINT `FK_Submissions_Assignments` FOREIGN KEY (`AssignmentId`) REFERENCES `Assignments` (`Id`),
+  CONSTRAINT `FK_Submissions_School` FOREIGN KEY (`SchoolId`) REFERENCES `School` (`Id`),
+  CONSTRAINT `FK_Submissions_User` FOREIGN KEY (`StudentId`) REFERENCES `User` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

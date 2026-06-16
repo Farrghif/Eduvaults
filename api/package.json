@@ -3,9 +3,26 @@
   "version": "1.0.0",
   "description": "Backend API for EduVaults",
   "main": "server.js",
+  "type": "commonjs",
+  "private": true,
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "node -e \"console.log('No build step required for this Express API')\"",
+    "test": "node -e \"console.log('No tests configured yet')\"",
+    "clean": "node -e \"console.log('No clean step configured yet')\""
+  },
+  "keywords": [
+    "express",
+    "api",
+    "mysql",
+    "backend",
+    "eduvaults"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -13,7 +30,9 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.9.7"
+    "multer": "^1.4.5-lts.2",
+    "mysql2": "^3.22.5",
+    "nodemailer": "^8.0.10"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

@@ -5,9 +5,9 @@ import 'dart:io' show Platform;
 String getPlatformBaseUrl() {
   if (Platform.isAndroid) {
     // Android Emulator -> 10.0.2.2 adalah alias untuk host machine localhost
-    return 'http://10.0.2.2:5000';
+    return 'http://10.0.2.2:5001';
   }
 
   // iOS Simulator, macOS, Windows, Linux -> gunakan localhost
-  return 'http://localhost:5000';
+  return 'http://localhost:5001';
 }

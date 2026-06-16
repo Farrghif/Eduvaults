@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config.dart';
 import 'class_detail_screen.dart';
-
+import 'profile_screen.dart';
+import 'settings_screen.dart';
+import 'todo_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -74,14 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('user');
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
-  }
+// Removed _logout since it is now in settings_screen.dart
 
   void _showAddClassDialog() {
     if (_user?['role'] == 'teacher') {
@@ -224,7 +219,10 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.account_circle),
             onPressed: () {
-              // Show profile options
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
             },
           ),
         ],
@@ -249,11 +247,38 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Classes'),
               onTap: () => Navigator.pop(context),
             ),
-            const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Log out'),
-              onTap: _logout,
+              leading: Icon(_user?['role'] == 'teacher' ? Icons.fact_check : Icons.assignment),
+              title: Text(_user?['role'] == 'teacher' ? 'To Review' : 'To-Do'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TodoScreen(userRole: _user?['role'] ?? 'student')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
             ),
           ],
         ),
@@ -300,7 +325,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ClassDetailScreen(classData: classItem),
+                                builder: (context) => ClassDetailScreen(
+                                  classData: classItem,
+                                  userRole: _user?['role'] ?? 'student',
+                                ),
                               ),
                             );
                           },
@@ -342,8 +370,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Text(
-                                  'Instructor Name', // Could be fetched later
+                                  classItem['description'] ?? '',
                                   style: TextStyle(color: Colors.grey[700]),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
