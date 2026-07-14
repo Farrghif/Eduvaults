@@ -272,7 +272,7 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     }
   }
 
-  Future<void> _createQuestion(String title, String description, DateTime dueDate, String type, List<String> options) async {
+  Future<void> _createQuestion(List<Map<String, dynamic>> questions, DateTime dueDate) async {
     final token = await _getToken();
     try {
       final response = await http.post(
@@ -282,18 +282,15 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
           'Content-Type': 'application/json',
         },
         body: json.encode({
-          'title': title,
-          'description': description,
           'dueDate': dueDate.toIso8601String(),
-          'type': type,
-          'options': options,
+          'questions': questions,
         }),
       );
       if (response.statusCode == 201) {
         await _fetchClasswork();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Question created successfully!'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Questions created successfully!'), backgroundColor: Colors.green),
           );
         }
       } else {
@@ -681,101 +678,137 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
   }
 
   void _showCreateQuestionDialog() {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
+    List<QuestionFormState> questions = [QuestionFormState()];
     DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
     TimeOfDay selectedTime = const TimeOfDay(hour: 23, minute: 59);
-    String questionType = 'short_answer';
-    List<TextEditingController> optionControllers = [TextEditingController(), TextEditingController()];
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Create Question'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          title: const Text('Create Question(s)'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              shrinkWrap: true,
               children: [
-                DropdownButtonFormField<String>(
-                  value: questionType,
-                  decoration: const InputDecoration(
-                    labelText: 'Question Type',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'short_answer', child: Text('Short Answer')),
-                    DropdownMenuItem(value: 'multiple_choice', child: Text('Multiple Choice')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setDialogState(() => questionType = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Question (required)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Instructions (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                if (questionType == 'multiple_choice') ...[
-                  const SizedBox(height: 16),
-                  const Text('Options:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  ...List.generate(optionControllers.length, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Row(
+                ...questions.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  QuestionFormState qState = entry.value;
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.radio_button_unchecked, color: Colors.grey[600], size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: optionControllers[index],
-                              decoration: InputDecoration(
-                                hintText: 'Option ${index + 1}',
-                                isDense: true,
-                              ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Question ${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              if (questions.length > 1)
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      questions.removeAt(index);
+                                    });
+                                  },
+                                )
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: qState.questionType,
+                            decoration: const InputDecoration(
+                              labelText: 'Question Type',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'short_answer', child: Text('Short Answer')),
+                              DropdownMenuItem(value: 'multiple_choice', child: Text('Multiple Choice')),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setDialogState(() => qState.questionType = value);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: qState.titleController,
+                            decoration: const InputDecoration(
+                              labelText: 'Question (required)',
+                              border: OutlineInputBorder(),
                             ),
                           ),
-                          if (optionControllers.length > 2)
-                            IconButton(
-                              icon: const Icon(Icons.close, size: 20),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: qState.descController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Instructions (optional)',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          if (qState.questionType == 'multiple_choice') ...[
+                            const SizedBox(height: 16),
+                            const Text('Options:', style: TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            ...List.generate(qState.optionControllers.length, (optIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.radio_button_unchecked, color: Colors.grey[600], size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: qState.optionControllers[optIndex],
+                                        decoration: InputDecoration(
+                                          hintText: 'Option ${optIndex + 1}',
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ),
+                                    if (qState.optionControllers.length > 2)
+                                      IconButton(
+                                        icon: const Icon(Icons.close, size: 20),
+                                        onPressed: () {
+                                          setDialogState(() {
+                                            qState.optionControllers.removeAt(optIndex);
+                                          });
+                                        },
+                                      )
+                                  ],
+                                ),
+                              );
+                            }),
+                            TextButton.icon(
                               onPressed: () {
                                 setDialogState(() {
-                                  optionControllers[index].dispose();
-                                  optionControllers.removeAt(index);
+                                  qState.optionControllers.add(TextEditingController());
                                 });
                               },
-                            )
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add option'),
+                            ),
+                          ],
                         ],
                       ),
-                    );
-                  }),
-                  TextButton.icon(
-                    onPressed: () {
-                      setDialogState(() {
-                        optionControllers.add(TextEditingController());
-                      });
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add option'),
-                  ),
-                ],
-                const SizedBox(height: 12),
+                    ),
+                  );
+                }),
+                TextButton.icon(
+                  onPressed: () {
+                    setDialogState(() {
+                      questions.add(QuestionFormState());
+                    });
+                  },
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Add Another Question'),
+                ),
+                const Divider(),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.calendar_today),
@@ -807,42 +840,60 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+              },
               child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () {
-                if (titleController.text.trim().isNotEmpty) {
+                List<Map<String, dynamic>> finalQuestions = [];
+                bool hasError = false;
+
+                for (var q in questions) {
+                  if (q.titleController.text.trim().isEmpty) continue; // skip empty
+                  
                   List<String> options = [];
-                  if (questionType == 'multiple_choice') {
-                    options = optionControllers
+                  if (q.questionType == 'multiple_choice') {
+                    options = q.optionControllers
                         .map((c) => c.text.trim())
                         .where((text) => text.isNotEmpty)
                         .toList();
                     if (options.length < 2) {
+                      hasError = true;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please provide at least 2 options for multiple choice')),
+                        const SnackBar(content: Text('Please provide at least 2 options for all multiple choice questions')),
                       );
-                      return;
+                      break;
                     }
                   }
-                  
-                  final dueDateTime = DateTime(
-                    selectedDate.year,
-                    selectedDate.month,
-                    selectedDate.day,
-                    selectedTime.hour,
-                    selectedTime.minute,
-                  );
-                  Navigator.pop(context);
-                  _createQuestion(
-                    titleController.text.trim(),
-                    descController.text.trim(),
-                    dueDateTime,
-                    questionType,
-                    options,
-                  );
+                  finalQuestions.add({
+                    'title': q.titleController.text.trim(),
+                    'description': q.descController.text.trim(),
+                    'type': q.questionType,
+                    'options': options,
+                  });
                 }
+
+                if (hasError) return;
+                
+                if (finalQuestions.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please provide at least 1 question')),
+                  );
+                  return;
+                }
+
+                final dueDateTime = DateTime(
+                  selectedDate.year,
+                  selectedDate.month,
+                  selectedDate.day,
+                  selectedTime.hour,
+                  selectedTime.minute,
+                );
+                
+                Navigator.pop(context);
+                _createQuestion(finalQuestions, dueDateTime);
               },
               child: const Text('Ask'),
             ),
@@ -1736,3 +1787,19 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     }
   }
 }
+
+class QuestionFormState {
+  TextEditingController titleController = TextEditingController();
+  TextEditingController descController = TextEditingController();
+  String questionType = 'short_answer';
+  List<TextEditingController> optionControllers = [TextEditingController(), TextEditingController()];
+
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    for (var c in optionControllers) {
+      c.dispose();
+    }
+  }
+}
+

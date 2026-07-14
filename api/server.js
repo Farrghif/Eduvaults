@@ -713,8 +713,27 @@ app.post('/api/classes/:classId/questions', authenticateToken, async (req, res) 
     }
     try {
         const { classId } = req.params;
-        const { title, description, dueDate, type, options } = req.body;
+        const { questions, title, description, dueDate, type, options } = req.body;
 
+        // If it's a bulk creation
+        if (questions && Array.isArray(questions) && questions.length > 0) {
+            if (!dueDate) return res.status(400).json({ message: 'Due date is required' });
+            
+            const results = [];
+            for (const q of questions) {
+                if (!q.title) continue;
+                
+                const [result] = await db.execute(
+                    'INSERT INTO Questions (ClassId, Title, Description, Type, Options, DueDate, CreatedById, SchoolId) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+                    [classId, q.title, q.description || '', q.type || 'short_answer', q.options ? JSON.stringify(q.options) : null, dueDate, req.user.id]
+                );
+                results.push(result.insertId);
+            }
+            
+            return res.status(201).json({ message: `${results.length} questions created`, ids: results });
+        }
+
+        // Single creation (fallback)
         if (!title || !dueDate) return res.status(400).json({ message: 'Title and due date are required' });
 
         const [result] = await db.execute(
